@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Document   : co_preasientos.xml
+    Description:
+        Estructura de la tabla co_preasientos.
+-->
+<tabla>
+    <columna>
+        <nombre>id</nombre>
+        <tipo>serial</tipo>
+        <nulo>NO</nulo>
+        <defecto>nextval('co_preasientos_id_seq'::regclass)</defecto>
+    </columna>
+    <columna>
+        <nombre>num_pre</nombre>
+        <tipo>int(11)</tipo>
+        <nulo>NO</nulo>
+    </columna>
+    <columna>
+        <nombre>id_part</nombre>
+        <tipo>varchar(2)</tipo>
+        <nulo>NO</nulo>
+    </columna>
+    <columna>
+        <nombre>subcuenta</nombre>
+        <tipo>varchar(255)</tipo>
+        <nulo>NO</nulo>
+    </columna>
+    <columna>
+        <nombre>debe</nombre>
+        <tipo>varchar(45)</tipo>
+        <nulo>NO</nulo>
+        <defecto>0</defecto>
+    </columna>
+    <columna>
+        <nombre>haber</nombre>
+        <tipo>varchar(45)</tipo>
+        <nulo>NO</nulo>
+        <defecto>0</defecto>
+    </columna>
+    <restriccion>
+        <nombre>co_preasientos_pkey</nombre>
+        <consulta>PRIMARY KEY (id)</consulta>
+    </restriccion>
+</tabla>
