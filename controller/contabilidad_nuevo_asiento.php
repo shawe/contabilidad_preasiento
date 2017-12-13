@@ -1,7 +1,8 @@
 <?php
-/*
- * This file is part of facturacion_base
- * Copyright (C) 2014-2017  Carlos Garcia Gomez  neorazorx@gmail.com
+/**
+ * This file is part of contabilidad_preasiento
+ * Copyright (C) 2014-2017  Carlos Garcia Gomez  <neorazorx@gmail.com>
+ * Copyright (C) 2017  Rafael Muñoz Olivé
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
@@ -12,31 +13,106 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * Description of contabilidad_nuevo_asiento
+ *
+ * @author Rafael Muñoz Olivé
+ */
 class contabilidad_nuevo_asiento extends fs_controller
 {
-
+    /**
+     * Contiene el asiento que se va a crear.
+     *
+     * @var asiento
+     */
     public $asiento;
-    public $concepto;
-    public $cuenta_banco;
-    public $divisa;
-    public $ejercicio;
-    public $impuesto;
-    public $lineas;
-    public $resultados;
-    public $subcuenta;
-   public $preasiento;
-   public $preasientos;
 
+    /**
+     * Contiene el concepto de la partida asociado al asiento.
+     *
+     * @var concepto_partida
+     */
+    public $concepto;
+
+    /**
+     * Contiene la cuenta de banco asociada al asiento.
+     *
+     * @var cuenta_banco
+     */
+    public $cuenta_banco;
+
+    /**
+     * Contiene la divisa asociada al asiento.
+     *
+     * @var divisa
+     */
+    public $divisa;
+
+    /**
+     * Contiene el ejercicio asociado al asiento (principalmente para obtener el ejercicio según la fecha).
+     *
+     * @var ejercicio
+     */
+    public $ejercicio;
+
+    /**
+     * Contiene el impuesto asociado al asiento.
+     *
+     * @var impuesto
+     */
+    public $impuesto;
+
+    /**
+     * Contiene un listado de asientos.
+     *
+     * @var asiento[]
+     */
+    public $lineas;
+
+    /**
+     * Contiene un listado de subcuentas.
+     *
+     * @var subcuenta[]
+     */
+    public $resultados;
+
+    /**
+     * Contiene la subcuenta asociada al asiento.
+     *
+     * @var subcuenta
+     */
+    public $subcuenta;
+
+    /**
+     * Contiene un preasiento asociado al asiento.
+     *
+     * @var preasiento
+     */
+    public $preasiento;
+
+    /**
+     * Contiene un listado de preasientos.
+     *
+     * @var preasiento[]
+     */
+    public $preasientos;
+
+    /**
+     * Constructor de la clase
+     */
     public function __construct()
     {
-        parent::__construct(__CLASS__, 'Nuevo asiento', 'contabilidad', FALSE, FALSE, TRUE);
+        parent::__construct(__CLASS__, 'Nuevo asiento', 'contabilidad', false, false, true);
     }
 
+    /**
+     * Parte privada de la clase
+     */
     protected function private_core()
     {
         $this->ppage = $this->page->get('contabilidad_asientos');
@@ -47,23 +123,23 @@ class contabilidad_nuevo_asiento extends fs_controller
         $this->divisa = new divisa();
         $this->ejercicio = new ejercicio();
         $this->impuesto = new impuesto();
-        $this->lineas = array();
-        $this->resultados = array();
+        $this->lineas = [];
+        $this->resultados = [];
         $this->subcuenta = new subcuenta();
-      $this->preasiento = new preasiento();
-      $this->preasientos = $this->preasiento->all();
+        $this->preasiento = new preasiento();
+        $this->preasientos = $this->preasiento->all();
 
-        if (isset($_POST['fecha']) AND isset($_POST['query'])) {
+        if (isset($_POST['fecha'], $_POST['query'])) {
             $this->new_search();
-        } else if (isset($_POST['fecha']) AND isset($_POST['concepto']) AND isset($_POST['divisa'])) {
+        } elseif (isset($_POST['fecha'], $_POST['concepto'], $_POST['divisa'])) {
             if ($_POST['autonomo'] != '0') {
-                if (floatval($_POST['autonomo']) > 0) {
+                if ((float) $_POST['autonomo'] > 0) {
                     $this->nuevo_asiento_autonomo();
                 } else {
                     $this->new_error_msg('Importe no válido: ' . $_POST['autonomo']);
                 }
-            } else if ($_POST['modelo130'] != '0') {
-                if (floatval($_POST['modelo130']) > 0) {
+            } elseif ($_POST['modelo130'] != '0') {
+                if ((float) $_POST['modelo130'] > 0) {
                     $this->nuevo_asiento_modelo130();
                 } else {
                     $this->new_error_msg('Importe no válido: ' . $_POST['modelo130']);
@@ -71,24 +147,29 @@ class contabilidad_nuevo_asiento extends fs_controller
             } else {
                 $this->nuevo_asiento();
             }
-        } else if (isset($_GET['copy'])) {
+        } elseif (isset($_GET['copy'])) {
             $this->copiar_asiento();
         } else {
             $this->check_datos_contables();
         }
     }
 
+    /**
+     * Devuelve el ejercicio para la fecha indicada.
+     *
+     * @param string $fecha
+     *
+     * @return ejercicio|bool
+     */
     private function get_ejercicio($fecha)
     {
-        $ejercicio = FALSE;
-
         $ejercicio = $this->ejercicio->get_by_fecha($fecha);
         if ($ejercicio) {
             $regiva0 = new regularizacion_iva();
             if ($regiva0->get_fecha_inside($fecha)) {
                 $this->new_error_msg('No se puede usar la fecha ' . $_POST['fecha'] . ' porque ya hay'
                     . ' una regularización de ' . FS_IVA . ' para ese periodo.');
-                $ejercicio = FALSE;
+                $ejercicio = false;
             }
         } else {
             $this->new_error_msg('Ejercicio no encontrado.');
@@ -97,26 +178,29 @@ class contabilidad_nuevo_asiento extends fs_controller
         return $ejercicio;
     }
 
+    /**
+     * Crea un nuevo asiento.
+     */
     private function nuevo_asiento()
     {
-        $continuar = TRUE;
+        $continuar = true;
 
         $eje0 = $this->get_ejercicio($_POST['fecha']);
         if (!$eje0) {
-            $continuar = FALSE;
+            $continuar = false;
         }
 
         $div0 = $this->divisa->get($_POST['divisa']);
         if (!$div0) {
             $this->new_error_msg('Divisa no encontrada.');
-            $continuar = FALSE;
+            $continuar = false;
         }
 
         if ($this->duplicated_petition($_POST['petition_id'])) {
             $this->new_error_msg('Petición duplicada. Has hecho doble clic sobre el botón Guardar
                y se han enviado dos peticiones. Mira en <a href="' . $this->ppage->url() . '">asientos</a>
                para ver si el asiento se ha guardado correctamente.');
-            $continuar = FALSE;
+            $continuar = false;
         }
 
         if ($continuar) {
@@ -124,13 +208,13 @@ class contabilidad_nuevo_asiento extends fs_controller
             $this->asiento->idconcepto = $_POST['idconceptopar'];
             $this->asiento->concepto = $_POST['concepto'];
             $this->asiento->fecha = $_POST['fecha'];
-            $this->asiento->importe = floatval($_POST['importe']);
+            $this->asiento->importe = (float) $_POST['importe'];
 
             if ($this->asiento->save()) {
-                $numlineas = intval($_POST['numlineas']);
+                $numlineas = (int) $_POST['numlineas'];
                 for ($i = 1; $i <= $numlineas; $i++) {
                     if (isset($_POST['codsubcuenta_' . $i])) {
-                        if ($_POST['codsubcuenta_' . $i] != '' AND $continuar) {
+                        if ($_POST['codsubcuenta_' . $i] != '' && $continuar) {
                             $sub0 = $this->subcuenta->get_by_codigo($_POST['codsubcuenta_' . $i], $eje0->codejercicio);
                             if ($sub0) {
                                 $partida = new partida();
@@ -139,8 +223,8 @@ class contabilidad_nuevo_asiento extends fs_controller
                                 $partida->tasaconv = $div0->tasaconv;
                                 $partida->idsubcuenta = $sub0->idsubcuenta;
                                 $partida->codsubcuenta = $sub0->codsubcuenta;
-                                $partida->debe = floatval($_POST['debe_' . $i]);
-                                $partida->haber = floatval($_POST['haber_' . $i]);
+                                $partida->debe = (float) $_POST['debe_' . $i];
+                                $partida->haber = (float) $_POST['haber_' . $i];
                                 $partida->idconcepto = $this->asiento->idconcepto;
                                 $partida->concepto = $this->asiento->concepto;
                                 $partida->documento = $this->asiento->documento;
@@ -153,22 +237,22 @@ class contabilidad_nuevo_asiento extends fs_controller
                                             $partida->idcontrapartida = $subc1->idsubcuenta;
                                             $partida->codcontrapartida = $subc1->codsubcuenta;
                                             $partida->cifnif = $_POST['cifnif_' . $i];
-                                            $partida->iva = floatval($_POST['iva_' . $i]);
-                                            $partida->baseimponible = floatval($_POST['baseimp_' . $i]);
+                                            $partida->iva = (float) $_POST['iva_' . $i];
+                                            $partida->baseimponible = (float) $_POST['baseimp_' . $i];
                                         } else {
                                             $this->new_error_msg('Subcuenta ' . $_POST['codcontrapartida_' . $i] . ' no encontrada.');
-                                            $continuar = FALSE;
+                                            $continuar = false;
                                         }
                                     }
                                 }
 
                                 if (!$partida->save()) {
                                     $this->new_error_msg('Imposible guardar la partida de la subcuenta ' . $_POST['codsubcuenta_' . $i] . '.');
-                                    $continuar = FALSE;
+                                    $continuar = false;
                                 }
                             } else {
                                 $this->new_error_msg('Subcuenta ' . $_POST['codsubcuenta_' . $i] . ' no encontrada.');
-                                $continuar = FALSE;
+                                $continuar = false;
                             }
                         }
                     }
@@ -178,7 +262,7 @@ class contabilidad_nuevo_asiento extends fs_controller
                     $this->asiento->concepto = '';
 
                     $this->new_message("<a href='" . $this->asiento->url() . "'>Asiento</a> guardado correctamente!");
-                    $this->new_change('Asiento ' . $this->asiento->numero, $this->asiento->url(), TRUE);
+                    $this->new_change('Asiento ' . $this->asiento->numero, $this->asiento->url(), true);
 
                     if ($_POST['redir'] == 'TRUE') {
                         header('Location: ' . $this->asiento->url());
@@ -186,43 +270,46 @@ class contabilidad_nuevo_asiento extends fs_controller
                 } else {
                     if ($this->asiento->delete()) {
                         $this->new_error_msg("¡Error en alguna de las partidas! Se ha borrado el asiento.");
-                    } else
+                    } else {
                         $this->new_error_msg("¡Error en alguna de las partidas! Además ha sido imposible borrar el asiento.");
+                    }
                 }
-            }
-            else {
+            } else {
                 $this->new_error_msg("¡Imposible guardar el asiento!");
             }
         }
     }
 
+    /**
+     * Crea un nuevo asiento para autonomo.
+     */
     private function nuevo_asiento_autonomo()
     {
-        $continuar = TRUE;
+        $continuar = true;
 
         $eje0 = $this->get_ejercicio($_POST['fecha']);
         if (!$eje0) {
-            $continuar = FALSE;
+            $continuar = false;
         }
 
         $div0 = $this->divisa->get($_POST['divisa']);
         if (!$div0) {
             $this->new_error_msg('Divisa no encontrada.');
-            $continuar = FALSE;
+            $continuar = false;
         }
 
         if ($this->duplicated_petition($_POST['petition_id'])) {
             $this->new_error_msg('Petición duplicada. Has hecho doble clic sobre el botón Guardar
                y se han enviado dos peticiones. Mira en <a href="' . $this->ppage->url() . '">asientos</a>
                para ver si el asiento se ha guardado correctamente.');
-            $continuar = FALSE;
+            $continuar = false;
         }
 
         if ($continuar) {
-            $meses = array(
+            $meses = [
                 '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio',
                 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-            );
+            ];
 
             $codcaja = '5700000000';
             if (isset($_POST['banco'])) {
@@ -234,9 +321,9 @@ class contabilidad_nuevo_asiento extends fs_controller
             /// asiento de cuota
             $asiento = new asiento();
             $asiento->codejercicio = $eje0->codejercicio;
-            $asiento->concepto = 'Cuota de autónomo ' . $meses[intval(date('m', strtotime($_POST['fecha'])))];
+            $asiento->concepto = 'Cuota de autónomo ' . $meses[(int) date('m', strtotime($_POST['fecha']))];
             $asiento->fecha = $_POST['fecha'];
-            $asiento->importe = floatval($_POST['autonomo']);
+            $asiento->importe = (float) $_POST['autonomo'];
 
             if ($asiento->save()) {
                 $subc = $this->subcuenta->get_by_codigo('6420000000', $eje0->codejercicio);
@@ -252,7 +339,7 @@ class contabilidad_nuevo_asiento extends fs_controller
                     $partida->save();
                 } else {
                     $this->new_error_msg('Subcuenta 6420000000 no encontrada.');
-                    $continuar = FALSE;
+                    $continuar = false;
                 }
 
                 $subc = $this->subcuenta->get_by_codigo('4760000000', $eje0->codejercicio);
@@ -268,7 +355,7 @@ class contabilidad_nuevo_asiento extends fs_controller
                     $partida->save();
                 } else {
                     $this->new_error_msg('Subcuenta 4760000000 no encontrada.');
-                    $continuar = FALSE;
+                    $continuar = false;
                 }
 
                 if ($continuar) {
@@ -277,9 +364,9 @@ class contabilidad_nuevo_asiento extends fs_controller
                     /// asiento de pago
                     $asiento = new asiento();
                     $asiento->codejercicio = $eje0->codejercicio;
-                    $asiento->concepto = 'Pago de autónomo ' . $meses[intval(date('m', strtotime($_POST['fecha'])))];
+                    $asiento->concepto = 'Pago de autónomo ' . $meses[(int) date('m', strtotime($_POST['fecha']))];
                     $asiento->fecha = $_POST['fecha'];
-                    $asiento->importe = floatval($_POST['autonomo']);
+                    $asiento->importe = (float) $_POST['autonomo'];
 
                     if ($asiento->save()) {
                         $subc = $this->subcuenta->get_by_codigo('4760000000', $eje0->codejercicio);
@@ -313,43 +400,46 @@ class contabilidad_nuevo_asiento extends fs_controller
                 } else {
                     if ($asiento->delete()) {
                         $this->new_error_msg("¡Error en alguna de las partidas! Se ha borrado el asiento.");
-                    } else
+                    } else {
                         $this->new_error_msg("¡Error en alguna de las partidas! Además ha sido imposible borrar el asiento.");
+                    }
                 }
-            }
-            else {
+            } else {
                 $this->new_error_msg("¡Imposible guardar el asiento!");
             }
         }
     }
 
+    /**
+     * Crea un nuevo asiento para el modelo 130.
+     */
     private function nuevo_asiento_modelo130()
     {
-        $continuar = TRUE;
+        $continuar = true;
 
         $eje0 = $this->get_ejercicio($_POST['fecha']);
         if (!$eje0) {
-            $continuar = FALSE;
+            $continuar = false;
         }
 
         $div0 = $this->divisa->get($_POST['divisa']);
         if (!$div0) {
             $this->new_error_msg('Divisa no encontrada.');
-            $continuar = FALSE;
+            $continuar = false;
         }
 
         if ($this->duplicated_petition($_POST['petition_id'])) {
             $this->new_error_msg('Petición duplicada. Has hecho doble clic sobre el botón Guardar
                y se han enviado dos peticiones. Mira en <a href="' . $this->ppage->url() . '">asientos</a>
                para ver si el asiento se ha guardado correctamente.');
-            $continuar = FALSE;
+            $continuar = false;
         }
 
         if ($continuar) {
-            $meses = array(
+            $meses = [
                 '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio',
                 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-            );
+            ];
 
             $codcaja = '5700000000';
             if (isset($_POST['banco130'])) {
@@ -361,9 +451,9 @@ class contabilidad_nuevo_asiento extends fs_controller
             /// asiento de cuota
             $asiento = new asiento();
             $asiento->codejercicio = $eje0->codejercicio;
-            $asiento->concepto = 'Pago modelo 130 ' . $meses[intval(date('m', strtotime($_POST['fecha'])))];
+            $asiento->concepto = 'Pago modelo 130 ' . $meses[(int) date('m', strtotime($_POST['fecha']))];
             $asiento->fecha = $_POST['fecha'];
-            $asiento->importe = floatval($_POST['modelo130']);
+            $asiento->importe = (float) $_POST['modelo130'];
 
             if ($asiento->save()) {
                 $subc = $this->subcuenta->get_by_codigo('4730000000', $eje0->codejercicio);
@@ -379,7 +469,7 @@ class contabilidad_nuevo_asiento extends fs_controller
                     $partida->save();
                 } else {
                     $this->new_error_msg('Subcuenta 4730000000 no encontrada.');
-                    $continuar = FALSE;
+                    $continuar = false;
                 }
 
                 $subc = $this->subcuenta->get_by_codigo($codcaja, $eje0->codejercicio);
@@ -395,7 +485,7 @@ class contabilidad_nuevo_asiento extends fs_controller
                     $partida->save();
                 } else {
                     $this->new_error_msg('Subcuenta ' . $codcaja . ' no encontrada.');
-                    $continuar = FALSE;
+                    $continuar = false;
                 }
 
                 if ($continuar) {
@@ -403,16 +493,19 @@ class contabilidad_nuevo_asiento extends fs_controller
                 } else {
                     if ($asiento->delete()) {
                         $this->new_error_msg("¡Error en alguna de las partidas! Se ha borrado el asiento.");
-                    } else
+                    } else {
                         $this->new_error_msg("¡Error en alguna de las partidas! Además ha sido imposible borrar el asiento.");
+                    }
                 }
-            }
-            else {
+            } else {
                 $this->new_error_msg("¡Imposible guardar el asiento!");
             }
         }
     }
 
+    /**
+     * Copia un asiento,.
+     */
     private function copiar_asiento()
     {
         $copia = $this->asiento->get($_GET['copy']);
@@ -438,6 +531,9 @@ class contabilidad_nuevo_asiento extends fs_controller
         }
     }
 
+    /**
+     * Busca una lista de subcuentas por AJAX
+     */
     private function new_search()
     {
         /// cambiamos la plantilla HTML
@@ -447,18 +543,21 @@ class contabilidad_nuevo_asiento extends fs_controller
         if ($eje0) {
             $this->resultados = $this->subcuenta->search_by_ejercicio($eje0->codejercicio, $this->query);
         } else {
-            $this->resultados = array();
+            $this->resultados = [];
             $this->new_error_msg('Ningún ejercicio encontrado para la fecha ' . $_POST['fecha']);
         }
     }
 
+    /**
+     * Comprueba que los datos contables sean correctos.
+     */
     private function check_datos_contables()
     {
         $eje = $this->ejercicio->get_by_fecha($this->today());
         if ($eje) {
-            $ok = FALSE;
-            foreach ($this->subcuenta->all_from_ejercicio($eje->codejercicio, TRUE, 5) as $subc) {
-                $ok = TRUE;
+            $ok = false;
+            foreach ($this->subcuenta->all_from_ejercicio($eje->codejercicio, true, 5) as $subc) {
+                $ok = true;
                 break;
             }
 
