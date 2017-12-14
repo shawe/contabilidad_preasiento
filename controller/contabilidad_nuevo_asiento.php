@@ -2,7 +2,7 @@
 /**
  * This file is part of contabilidad_preasiento
  * Copyright (C) 2014-2017  Carlos Garcia Gomez  <neorazorx@gmail.com>
- * Copyright (C) 2017  Rafael Muñoz Olivé
+ * Copyright (C) 2017  Rafael Del Pozo Barajas
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
@@ -21,7 +21,7 @@
 /**
  * Description of contabilidad_nuevo_asiento
  *
- * @author Rafael Muñoz Olivé
+ * @author Rafael Del Pozo Barajas
  */
 class contabilidad_nuevo_asiento extends fs_controller
 {
