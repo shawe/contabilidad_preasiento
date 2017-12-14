@@ -1,7 +1,7 @@
 <?php
 /**
  * This file is part of contabilidad_preasiento
- * Copyright (C) 2017  Rafael Muñoz Olivé
+ * Copyright (C) 2017  Rafael Del Pozo Barajas
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
@@ -20,7 +20,7 @@
 /**
  * Description of preasiento
  *
- * @author Rafael Muñoz Olivé
+ * @author Rafael Del Pozo Barajas
  */
 class preasiento extends fs_model
 {
